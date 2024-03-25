@@ -1,49 +1,73 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_country_code/local_country_code.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
-
   @override
-  State<MyApp> createState() => _MyAppState();
+  _MyAppState createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
-  final _localCountryCodePlugin = LocalCountryCode();
+  String _simCountry = 'Unknown';
+  String _networkCountry = 'Unknown';
+  String _localeCountry = 'Unknown';
 
   @override
   void initState() {
     super.initState();
-    initPlatformState();
+    getSimCountryCode();
+    getNetworkCountryCode();
+    getLocaleCountryCode();
   }
 
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    // We also handle the message potentially returning null.
+  Future<void> getSimCountryCode() async {
+    String country;
     try {
-      platformVersion =
-          await _localCountryCodePlugin.getPlatformVersion() ?? 'Unknown platform version';
+      country =
+          await LocalCountryCode.detectSIMCountry ?? 'Unknown Country code';
     } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
+      country = 'Failed to get country code.';
+    }
+    if (!mounted) return;
+    setState(() {
+      _simCountry = country;
+    });
+  }
+
+  Future<void> getNetworkCountryCode() async {
+    String country;
+    try {
+      country = await LocalCountryCode.detectNetworkCountry ??
+          'Unknown Country code';
+    } on PlatformException {
+      country = 'Failed to get country code.';
     }
 
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
     if (!mounted) return;
 
     setState(() {
-      _platformVersion = platformVersion;
+      _networkCountry = country;
+    });
+  }
+
+  Future<void> getLocaleCountryCode() async {
+    String country;
+    try {
+      country = await LocalCountryCode.detectLocaleCountry ??
+          'Unknown Country code';
+    } on PlatformException {
+      country = 'Failed to get country code.';
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _localeCountry = country;
     });
   }
 
@@ -52,10 +76,25 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Plugin example app'),
+          title: const Text('Country code plugin'),
         ),
-        body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Country code name',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              SizedBox(
+                height: 20,
+              ),
+              Text(
+                  'SIM: $_simCountry\n\nNetwork: $_networkCountry\n\nLocale: $_localeCountry\n'),
+            ],
+          ),
         ),
       ),
     );
